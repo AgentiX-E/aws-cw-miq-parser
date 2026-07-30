@@ -10,6 +10,8 @@ export { serialize, quoteIdentifier } from './serializer.js';
 export type { SerializeOptions } from './serializer.js';
 export { traverse } from './visitor.js';
 export type { QueryVisitor } from './visitor.js';
+export { lint, listRules } from './linter.js';
+export type { LintRule, LinterOptions, LintSeverity } from './linter.js';
 export {
   formatError,
   formatSourceSnippet,

@@ -93,10 +93,10 @@ TagIdentifier
       return { isTag: true, name: 'tag.' + key };
     }
 
-// Label key: can be a regular dimension name or a tag reference
-// The `name` field always contains the full identifier as it appears in the query.
+// Label key: can be a regular dimension name, a tag reference, or AWS.AccountId
 LabelKey
-  = TagIdentifier
+  = "AWS.AccountId"i _ { return { isTag: false, name: 'AWS.AccountId' }; }
+  / TagIdentifier
   / id:PlainIdentifier { return { isTag: false, name: id }; }
 
 // String literal: single-quoted with escape support
@@ -183,15 +183,14 @@ SchemaSource
       };
     }
 
-// WHERE clause: WHERE condition [AND condition ...]
+// WHERE clause: WHERE condition [AND|OR condition ...]
 WhereClause
-  = "WHERE"i _ first:Condition _ rest:Conjunction* _ {
+  = "WHERE"i _ first:Condition _ rest:(op:LogicalConjunction _ cond:Condition _ { return { op, cond }; })* _ {
       const conditions = [first];
-      // Annotate logical operators
       first.logicalOperator = null;
-      for (let i = 0; i < rest.length; i++) {
-        rest[i].logicalOperator = 'AND';
-        conditions.push(rest[i]);
+      for (const item of rest) {
+        item.cond.logicalOperator = item.op;
+        conditions.push(item.cond);
       }
       return {
         type: 'WhereClause',
@@ -200,11 +199,13 @@ WhereClause
       };
     }
 
-// AND-connected condition
-Conjunction
-  = "AND"i _ cond:Condition _ { return cond; }
+// Logical conjunction: AND or OR between conditions
+LogicalConjunction
+  = "AND"i { return 'AND'; }
+  / "OR"i  { return 'OR'; }
 
 // A single WHERE condition: labelKey OPERATOR labelValue
+// Supports AWS.AccountId special dimension and CURRENT_ACCOUNT_ID()
 Condition
   = label:LabelKey _ op:Operator _ val:LabelValue _ {
       return {
@@ -213,14 +214,14 @@ Condition
         operator: op,
         labelValue: val,
         isTag: label.isTag,
-        // logicalOperator is set by WhereClause
         location: location()
       };
     }
 
-// Label value in WHERE: string literal or number
+// Label value in WHERE: string literal, number, or CURRENT_ACCOUNT_ID()
 LabelValue
-  = StringLiteral
+  = "CURRENT_ACCOUNT_ID"i _ "(" _ ")" _ { return 'CURRENT_ACCOUNT_ID()'; }
+  / StringLiteral
   / NumberLiteral
 
 // GROUP BY clause: GROUP BY labelKey [, labelKey ...]

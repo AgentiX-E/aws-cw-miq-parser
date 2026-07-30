@@ -105,6 +105,12 @@ describe('serialize — clause reconstruction', () => {
     const result = serialize(q);
     expect(result).toContain('LIMIT 50');
   });
+
+  it('reconstructs numeric WHERE value', () => {
+    const q = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2" WHERE Count = 100');
+    const result = serialize(q);
+    expect(result).toContain('Count = 100');
+  });
 });
 
 describe('serialize — round-trip property', () => {

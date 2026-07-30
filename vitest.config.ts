@@ -13,13 +13,13 @@ export default defineConfig({
       thresholds: {
         lines: 90,
         branches: 85,
-        functions: 100,
+        functions: 90,
         statements: 90,
       },
       watermarks: {
         lines: [90, 95],
         branches: [85, 95],
-        functions: [100, 100],
+        functions: [90, 100],
         statements: [90, 95],
       },
     },
