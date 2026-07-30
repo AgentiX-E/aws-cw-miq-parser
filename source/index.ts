@@ -6,6 +6,7 @@
 
 export { parse, ErrorCodes } from './parser.js';
 export { validate } from './validator.js';
+export { validateAst, safeValidateAst, parsedQuerySchema } from './schema.js';
 export { serialize, quoteIdentifier } from './serializer.js';
 export type { SerializeOptions } from './serializer.js';
 export { traverse } from './visitor.js';

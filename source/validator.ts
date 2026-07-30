@@ -241,7 +241,7 @@ function validateReservedKeywords(
 ): void {
   // Check metric name
   const metricName = query.select.metricName;
-  if (!isQuoted(metricName) && RESERVED_KEYWORDS.has(metricName.toUpperCase())) {
+  if (RESERVED_KEYWORDS.has(metricName.toUpperCase())) {
     errors.push({
       severity: 'error',
       code: ErrorCodes.SEM_RESERVED_KEYWORD,
@@ -269,7 +269,7 @@ function checkReserved(
   context: string,
   errors: ValidationMessage[],
 ): void {
-  if (!isQuoted(identifier) && RESERVED_KEYWORDS.has(identifier.toUpperCase())) {
+  if (RESERVED_KEYWORDS.has(identifier.toUpperCase())) {
     errors.push({
       severity: 'error',
       code: ErrorCodes.SEM_RESERVED_KEYWORD,
@@ -323,17 +323,4 @@ function validateWhereKeyInSchema(
       });
     }
   }
-}
-
-/** Heuristic: an identifier is likely "quoted" if the original raw text used quotes. */
-function isQuoted(_identifier: string): boolean {
-  // At this point, identifiers have already been unquoted by the parser.
-  // We could track this via SourceLocation, but for reserved keyword checking:
-  // The parser only successfully parsed it — so if it's a reserved word that
-  // was unquoted, it got through the syntax check (the grammar's Function rule
-  // would have caught it). What we check here is the semantic level.
-  //
-  // For now, this is conservative: we flag any match regardless of quoting.
-  // In a future iteration, we can track quote status via SourceLocation ranges.
-  return false;
 }
