@@ -1,20 +1,45 @@
 {
   "name": "@agentix/aws-cw-miq-parser",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "A TypeScript parser for AWS CloudWatch Metrics Insights queries — transforms MIQ query strings into structured JSON ASTs",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/source/index.js",
+  "types": "./dist/source/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/source/index.d.ts",
+      "import": "./dist/source/index.js"
+    },
+    "./parser": {
+      "types": "./dist/source/parser.d.ts",
+      "import": "./dist/source/parser.js"
+    },
+    "./validator": {
+      "types": "./dist/source/validator.d.ts",
+      "import": "./dist/source/validator.js"
+    },
+    "./serializer": {
+      "types": "./dist/source/serializer.d.ts",
+      "import": "./dist/source/serializer.js"
+    },
+    "./linter": {
+      "types": "./dist/source/linter.d.ts",
+      "import": "./dist/source/linter.js"
+    },
+    "./visitor": {
+      "types": "./dist/source/visitor.d.ts",
+      "import": "./dist/source/visitor.js"
+    },
+    "./errors": {
+      "types": "./dist/source/errors.d.ts",
+      "import": "./dist/source/errors.js"
     },
     "./types": {
-      "types": "./dist/types.d.ts",
-      "import": "./dist/types.js"
+      "types": "./dist/source/types.d.ts",
+      "import": "./dist/source/types.js"
     }
   },
+  "sideEffects": false,
   "bin": {
     "cw-miq": "./dist/cli/index.js"
   },
@@ -31,11 +56,11 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:property": "vitest run test/property/",
-    "test:bench": "vitest bench",
+    "test:bench": "vitest bench --run",
     "lint": "eslint source/ test/ cli/ scripts/",
     "lint:fix": "eslint --fix source/ test/ cli/ scripts/",
     "typecheck": "tsc --noEmit",
-    "prepack": "pnpm run build"
+    "prepublishOnly": "pnpm run build && pnpm run test"
   },
   "keywords": [
     "aws",
