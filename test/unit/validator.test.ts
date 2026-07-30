@@ -110,4 +110,11 @@ describe('validate — WHERE key in SCHEMA dimensions', () => {
     const warning = result.warnings.find((w) => w.code === ErrorCodes.SEM_WHERE_KEY_NOT_IN_SCHEMA);
     expect(warning).toBeUndefined();
   });
+
+  it('no warning for AWS.AccountId key in SCHEMA WHERE', () => {
+    const q = parse("SELECT AVG(CPUUtilization) FROM SCHEMA(\"AWS/EC2\", InstanceId) WHERE AWS.AccountId = '123456789012'");
+    const result = validate(q);
+    const warning = result.warnings.find((w) => w.code === ErrorCodes.SEM_WHERE_KEY_NOT_IN_SCHEMA);
+    expect(warning).toBeUndefined();
+  });
 });

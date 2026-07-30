@@ -11,10 +11,10 @@ export default defineConfig({
       include: ['source/**/*.ts'],
       exclude: ['source/generated/**', 'source/types.ts', 'source/index.ts'],
       thresholds: {
-        lines: 90,
-        branches: 85,
-        functions: 90,
-        statements: 90,
+        lines: 95,
+        branches: 95,
+        functions: 95,
+        statements: 95,
       },
       watermarks: {
         lines: [90, 95],

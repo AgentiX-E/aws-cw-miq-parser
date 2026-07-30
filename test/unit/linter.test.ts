@@ -83,4 +83,25 @@ describe('linter — rule configuration', () => {
     const warning = messages.find((m) => m.code === 'LINT_COUNT_WITHOUT_ORDER');
     expect(warning).toBeDefined();
   });
+
+  it('require-schema rule passes when SCHEMA is used', () => {
+    const q = parse('SELECT AVG(CPUUtilization) FROM SCHEMA("AWS/EC2", InstanceId)');
+    const messages = lint(q, { rules: { 'require-schema': 'warn' } });
+    const warning = messages.find((m) => m.code === 'LINT_REQUIRE_SCHEMA');
+    expect(warning).toBeUndefined();
+  });
+
+  it('max-limit rule passes when LIMIT ≤ 100', () => {
+    const q = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2" LIMIT 50');
+    const messages = lint(q, { rules: { 'max-limit': 'warn' } });
+    const warning = messages.find((m) => m.code === 'LINT_MAX_LIMIT');
+    expect(warning).toBeUndefined();
+  });
+
+  it('count-without-order rule passes when COUNT has ORDER BY', () => {
+    const q = parse('SELECT COUNT(CallCount) FROM "AWS/Usage" ORDER BY COUNT() DESC');
+    const messages = lint(q, { rules: { 'count-without-order': 'warn' } });
+    const warning = messages.find((m) => m.code === 'LINT_COUNT_WITHOUT_ORDER');
+    expect(warning).toBeUndefined();
+  });
 });
