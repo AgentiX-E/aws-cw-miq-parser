@@ -153,6 +153,12 @@ export interface ValidationResult {
 export interface ParseError {
   message: string;
   location: SourceLocation;
+  /** Unique error code for programmatic handling. */
+  code: string;
+  /** Error category discriminator. */
+  type: 'syntax' | 'semantic' | 'internal';
+  /** Tokens that were expected at the error position (syntax errors). */
   expected?: string[];
+  /** Token that was found instead of what was expected. */
   found?: string;
 }

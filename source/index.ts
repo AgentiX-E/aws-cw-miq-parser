@@ -1,9 +1,20 @@
 // Public API for @agentix/aws-cw-miq-parser
 //
 // This module exports the core parsing functionality for CloudWatch
-// Metrics Insights query strings.
+// Metrics Insights query strings, including error formatting,
+// serialization, semantic validation, and AST traversal utilities.
 
-export { parse } from './parser.js';
+export { parse, ErrorCodes } from './parser.js';
+export { validate } from './validator.js';
+export { serialize, quoteIdentifier } from './serializer.js';
+export type { SerializeOptions } from './serializer.js';
+export { traverse } from './visitor.js';
+export type { QueryVisitor } from './visitor.js';
+export {
+  formatError,
+  formatSourceSnippet,
+  formatTerminalError,
+} from './errors.js';
 
 // Re-export all type definitions
 export type {

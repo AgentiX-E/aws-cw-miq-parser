@@ -27,7 +27,7 @@ describe('parse — input validation', () => {
   it('throws on query exceeding 4096 characters', () => {
     const longNs = 'x'.repeat(4085);
     const longQuery = `SELECT AVG(CPUUtilization) FROM "${longNs}"`;
-    expect(() => parse(longQuery)).toThrow(/exceeds maximum length of 4096/);
+    expect(() => parse(longQuery)).toThrow('exceeds the maximum length');
   });
 
   it('accepts query at exactly 4096 characters', () => {
