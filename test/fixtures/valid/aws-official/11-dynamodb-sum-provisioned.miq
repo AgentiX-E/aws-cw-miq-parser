@@ -1,0 +1,1 @@
+SELECT SUM(ProvisionedWriteCapacityUnits) FROM SCHEMA("AWS/DynamoDB", TableName) GROUP BY TableName ORDER BY MAX() DESC LIMIT 10

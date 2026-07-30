@@ -1,0 +1,1 @@
+SELECT SUM(WriteIOPS) FROM SCHEMA("AWS/RDS", DBClusterIdentifier) GROUP BY DBClusterIdentifier ORDER BY MAX() DESC LIMIT 10

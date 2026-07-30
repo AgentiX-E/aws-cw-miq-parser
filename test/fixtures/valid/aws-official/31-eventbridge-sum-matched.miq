@@ -1,0 +1,1 @@
+SELECT SUM(MatchedEvents) FROM SCHEMA("AWS/Events", RuleName) GROUP BY RuleName ORDER BY MAX() DESC LIMIT 10

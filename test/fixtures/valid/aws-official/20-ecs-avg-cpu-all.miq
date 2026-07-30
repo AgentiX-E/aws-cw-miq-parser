@@ -1,0 +1,1 @@
+SELECT AVG(CPUUtilization) FROM SCHEMA("AWS/ECS", ClusterName)

@@ -1,0 +1,1 @@
+SELECT SUM(NumberOfMessagesSent) FROM SCHEMA("AWS/SQS", QueueName) GROUP BY QueueName ORDER BY SUM() DESC LIMIT 10

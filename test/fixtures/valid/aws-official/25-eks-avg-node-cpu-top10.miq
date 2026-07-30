@@ -1,0 +1,1 @@
+SELECT AVG(node_cpu_utilization) FROM SCHEMA("ContainerInsights", ClusterName) GROUP BY ClusterName ORDER BY AVG() DESC LIMIT 10

@@ -1,0 +1,1 @@
+SELECT MAX("GetRecords.IteratorAgeMilliseconds") FROM SCHEMA("AWS/Kinesis", StreamName) GROUP BY StreamName ORDER BY MAX() DESC LIMIT 10

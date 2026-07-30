@@ -1,0 +1,1 @@
+SELECT AVG(pod_cpu_utilization) FROM SCHEMA("ContainerInsights", ClusterName)

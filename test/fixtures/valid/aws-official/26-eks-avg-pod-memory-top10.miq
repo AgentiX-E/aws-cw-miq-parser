@@ -1,0 +1,1 @@
+SELECT AVG(pop_memory_utilization) FROM SCHEMA("ContainerInsights", ClusterName) GROUP BY ClusterName ORDER BY AVG() DESC LIMIT 10

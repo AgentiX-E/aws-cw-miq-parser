@@ -1,0 +1,1 @@
+SELECT AVG(VolumeTotalWriteTime) FROM SCHEMA("AWS/EBS", VolumeId)

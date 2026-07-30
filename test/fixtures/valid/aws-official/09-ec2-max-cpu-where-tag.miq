@@ -1,0 +1,1 @@
+SELECT MAX(CPUUtilization) FROM SCHEMA("AWS/EC2") WHERE tag.env = 'prod'

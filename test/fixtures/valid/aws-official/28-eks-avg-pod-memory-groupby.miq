@@ -1,0 +1,1 @@
+SELECT AVG(pod_memory_utilization) FROM SCHEMA("ContainerInsights", ClusterName, PodName) GROUP BY ClusterName, PodName ORDER BY AVG() DESC LIMIT 10

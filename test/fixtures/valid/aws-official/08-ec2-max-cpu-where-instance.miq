@@ -1,0 +1,1 @@
+SELECT MAX(CPUUtilization) FROM "AWS/EC2" WHERE InstanceId = 'i-1234567890abcdef0'

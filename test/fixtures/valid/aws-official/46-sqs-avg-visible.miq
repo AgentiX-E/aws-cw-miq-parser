@@ -1,0 +1,1 @@
+SELECT AVG(ApproximateNumberOfMessagesVisible) FROM SCHEMA("AWS/SQS", QueueName) GROUP BY QueueName ORDER BY AVG() DESC LIMIT 10

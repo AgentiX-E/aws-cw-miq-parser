@@ -1,0 +1,1 @@
+SELECT SUM(IncomingLogEvents) FROM SCHEMA("AWS/Logs", LogGroupName) GROUP BY LogGroupName ORDER BY SUM() DESC LIMIT 10

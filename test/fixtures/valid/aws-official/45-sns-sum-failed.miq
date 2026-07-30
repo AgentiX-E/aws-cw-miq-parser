@@ -1,0 +1,1 @@
+SELECT SUM(NumberOfNotificationsFailed) FROM SCHEMA("AWS/SNS", TopicName) GROUP BY TopicName ORDER BY SUM() DESC LIMIT 10

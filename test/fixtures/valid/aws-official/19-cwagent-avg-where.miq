@@ -1,0 +1,1 @@
+SELECT AVG(CPUUtilization) FROM "AWS/CWAgent" WHERE ApplicationName = 'eCommerce'

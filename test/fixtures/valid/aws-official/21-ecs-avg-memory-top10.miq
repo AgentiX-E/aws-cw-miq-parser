@@ -1,0 +1,1 @@
+SELECT AVG(MemoryUtilization) FROM SCHEMA("AWS/ECS", ClusterName) GROUP BY ClusterName ORDER BY AVG() DESC LIMIT 10

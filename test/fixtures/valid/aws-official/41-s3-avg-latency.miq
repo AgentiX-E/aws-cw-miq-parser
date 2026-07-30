@@ -1,0 +1,1 @@
+SELECT AVG(TotalRequestLatency) FROM SCHEMA("AWS/S3", BucketName, FilterId) WHERE FilterId = 'EntireBucket' GROUP BY BucketName ORDER BY AVG() DESC

@@ -1,0 +1,1 @@
+SELECT AVG(Duration) FROM SCHEMA("AWS/Lambda", FunctionName) GROUP BY FunctionName ORDER BY MAX() DESC LIMIT 10

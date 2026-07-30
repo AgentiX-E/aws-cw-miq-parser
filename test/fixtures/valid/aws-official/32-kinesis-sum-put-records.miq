@@ -1,0 +1,1 @@
+SELECT SUM("PutRecords.Bytes") FROM SCHEMA("AWS/Kinesis", StreamName) GROUP BY StreamName ORDER BY SUM() DESC LIMIT 10
