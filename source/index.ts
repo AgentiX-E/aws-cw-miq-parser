@@ -25,6 +25,12 @@ export {
   SPECIAL_TOKENS,
 } from './autocomplete.js';
 export type { CompletionItem, CompletionContext } from './autocomplete.js';
+export { estimateCost } from './cost.js';
+export type {
+  CostEstimate,
+  CostFactor,
+  CostRecommendation,
+} from './cost.js';
 export { lint, listRules } from './linter.js';
 export type { LintRule, LinterOptions, LintSeverity } from './linter.js';
 export {
