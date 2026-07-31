@@ -1,0 +1,27 @@
+# Dependabot version updates configuration.
+# Creates automated PRs for out-of-date npm dependencies.
+# Security alerts are managed separately in repository settings.
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates
+
+version: 2
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    versioning-strategy: "increase"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "Lambertyan"
+    assignees:
+      - "Lambertyan"
