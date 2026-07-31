@@ -5,6 +5,8 @@
 // serialization, semantic validation, and AST traversal utilities.
 
 export { parse, ErrorCodes } from './parser.js';
+export { parseWithRecovery } from './recovery.js';
+export type { RecoveryResult } from './recovery.js';
 export { validate } from './validator.js';
 export { validateAst, safeValidateAst, parsedQuerySchema } from './schema.js';
 export { serialize, quoteIdentifier } from './serializer.js';
@@ -25,6 +27,8 @@ export type {
   ComparisonOperator,
   LogicalOperator,
   SortDirection,
+  Comment,
+  CommentAttachable,
   Position,
   SourceLocation,
   SelectClause,

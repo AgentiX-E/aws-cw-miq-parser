@@ -29,6 +29,22 @@ export interface SourceLocation {
   end: Position;
 }
 
+/** A comment found in the source query. */
+export interface Comment {
+  type: 'LineComment' | 'BlockComment';
+  /** The comment text including delimiters, e.g. "-- text" or block comment markers. */
+  text: string;
+  location: SourceLocation;
+}
+
+/** Base fields shared by all AST nodes that may have attached comments. */
+export interface CommentAttachable {
+  /** Comments appearing immediately before this node in the source. */
+  leadingComments?: Comment[];
+  /** Comments appearing on the same line after this node. */
+  trailingComments?: Comment[];
+}
+
 // --- Clause Types ---
 
 /** SELECT clause: specifies the aggregation function and target metric. */
@@ -116,6 +132,7 @@ export type QueryType = 'MetricsInsightsQuery';
 /**
  * The complete parsed representation of a CloudWatch Metrics Insights query.
  * Every node carries its source location for error reporting and tooling.
+ * Comments are attached to the nearest AST node for formatter preservation.
  */
 export interface ParsedQuery {
   type: QueryType;
@@ -127,6 +144,9 @@ export interface ParsedQuery {
   limit?: LimitClause;
   /** Source location spanning the entire query string. */
   location: SourceLocation;
+  /** Comments appearing before the SELECT keyword or after the last clause. */
+  leadingComments?: Comment[];
+  trailingComments?: Comment[];
 }
 
 // --- Error Types ---

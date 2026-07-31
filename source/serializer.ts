@@ -32,6 +32,17 @@ export function serialize(query: ParsedQuery, options?: SerializeOptions): strin
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const parts: string[] = [];
 
+  // Preserve leading comments
+  if (query.leadingComments && query.leadingComments.length > 0) {
+    for (const c of query.leadingComments) {
+      parts.push(c.text);
+    }
+    if (!opts.pretty) {
+      // Ensure line comment on its own line doesn't consume the SELECT
+      parts[parts.length - 1] += '\n';
+    }
+  }
+
   parts.push(serializeSelect(query, opts));
   parts.push(serializeFrom(query, opts));
 
@@ -46,6 +57,11 @@ export function serialize(query: ParsedQuery, options?: SerializeOptions): strin
   }
   if (query.limit) {
     parts.push(serializeLimit(query, opts));
+  }
+
+  // Preserve trailing comments
+  if (query.trailingComments && query.trailingComments.length > 0) {
+    parts.push(query.trailingComments.map((c) => c.text).join(' '));
   }
 
   const separator = opts.pretty ? '\n' : ' ';

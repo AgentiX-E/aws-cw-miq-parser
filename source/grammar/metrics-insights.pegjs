@@ -21,6 +21,9 @@
 
   const AGGREGATION_FUNCTIONS = new Set(['AVG', 'COUNT', 'MAX', 'MIN', 'SUM']);
 
+  // Comment tracking — collected during lexing, attached to root AST node
+  let collectedComments = [];
+
   function normalizeFunction(name) {
     const upper = name.toUpperCase();
     if (!AGGREGATION_FUNCTIONS.has(upper)) {
@@ -40,11 +43,11 @@ WhiteSpace "whitespace"
 
 // Line comment: -- until end of line
 LineComment
-  = "--" [^\n\r]*
+  = "--" [^\n\r]* { collectedComments.push({ type: 'LineComment', text: text(), location: location() }); }
 
 // Block comment: /* ... */
 BlockComment
-  = "/*" (!"*/" .)* "*/"
+  = "/*" (!"*/" .)* "*/" { collectedComments.push({ type: 'BlockComment', text: text(), location: location() }); }
 
 // Comments are treated as whitespace (skipped between tokens)
 Comment
@@ -293,6 +296,12 @@ Query
       if (groupBy) result.groupBy = groupBy;
       if (orderBy) result.orderBy = orderBy;
       if (limit) result.limit = limit;
+
+      // Attach any comments collected during lexing
+      if (collectedComments.length > 0) {
+        result.leadingComments = collectedComments;
+        collectedComments = [];
+      }
 
       return result;
     }
