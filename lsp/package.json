@@ -1,0 +1,38 @@
+{
+  "name": "@agentix-e/aws-cw-miq-parser-lsp",
+  "version": "0.1.0",
+  "description": "Language Server Protocol implementation for CloudWatch Metrics Insights queries — provides real-time diagnostics, completions, and hover information in any LSP-compatible editor",
+  "type": "module",
+  "main": "./dist/lsp/server.js",
+  "bin": {
+    "cw-miq-lsp": "./dist/lsp/server.js"
+  },
+  "files": [
+    "dist/lsp",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.lsp.json",
+    "dev": "tsx watch lsp/server.ts"
+  },
+  "keywords": [
+    "aws",
+    "cloudwatch",
+    "metrics-insights",
+    "lsp",
+    "language-server",
+    "vscode",
+    "diagnostics",
+    "completions"
+  ],
+  "license": "MIT",
+  "author": "AgentiX-E",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AgentiX-E/aws-cw-miq-parser.git",
+    "directory": "lsp"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
