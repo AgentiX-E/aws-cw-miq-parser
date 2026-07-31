@@ -1,5 +1,5 @@
 {
-  "name": "@agentix/aws-cw-miq-parser",
+  "name": "@agentix-e/aws-cw-miq-parser",
   "version": "0.5.0",
   "description": "A TypeScript parser for AWS CloudWatch Metrics Insights queries — transforms MIQ query strings into structured JSON ASTs",
   "type": "module",

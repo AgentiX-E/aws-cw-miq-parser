@@ -26,7 +26,7 @@ const MAX_QUERY_LENGTH = 4096;
  *
  * @example
  * ```ts
- * import { parse } from '@agentix/aws-cw-miq-parser';
+ * import { parse } from '@agentix-e/aws-cw-miq-parser';
  *
  * const result = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2"');
  * console.log(result.select.function); // 'AVG'

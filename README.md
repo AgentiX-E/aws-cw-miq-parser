@@ -1,4 +1,4 @@
-# @agentix/aws-cw-miq-parser
+# @agentix-e/aws-cw-miq-parser
 
 A TypeScript parser for **AWS CloudWatch Metrics Insights** queries. Transforms MIQ query strings into structured, type-safe JSON Abstract Syntax Trees (ASTs).
 
@@ -27,15 +27,15 @@ A TypeScript parser for **AWS CloudWatch Metrics Insights** queries. Transforms 
 ## Installation
 
 ```bash
-npm install @agentix/aws-cw-miq-parser
+npm install @agentix-e/aws-cw-miq-parser
 # or
-pnpm add @agentix/aws-cw-miq-parser
+pnpm add @agentix-e/aws-cw-miq-parser
 ```
 
 ## Quick Start
 
 ```typescript
-import { parse, serialize, validate } from '@agentix/aws-cw-miq-parser';
+import { parse, serialize, validate } from '@agentix-e/aws-cw-miq-parser';
 
 const query = `SELECT AVG(CPUUtilization)
   FROM SCHEMA("AWS/EC2", InstanceId)
@@ -88,7 +88,7 @@ npx cw-miq serialize query.miq
 Validate Metrics Insights queries embedded in Terraform or CloudFormation before deployment:
 
 ```typescript
-import { parse, lint } from '@agentix/aws-cw-miq-parser';
+import { parse, lint } from '@agentix-e/aws-cw-miq-parser';
 import { readFileSync } from 'node:fs';
 
 // Extract MIQ queries from IaC files and validate
@@ -124,7 +124,7 @@ if (!validateIaCQueries('main.tf')) {
 Transform Grafana CloudWatch data source queries for migration or analysis:
 
 ```typescript
-import { parse, serialize, traverseWithPath } from '@agentix/aws-cw-miq-parser';
+import { parse, serialize, traverseWithPath } from '@agentix-e/aws-cw-miq-parser';
 
 // Rewrite all queries in a Grafana JSON model to use SCHEMA()
 function migrateGrafanaDashboard(dashboard: any): any {
@@ -163,7 +163,7 @@ function migrateGrafanaDashboard(dashboard: any): any {
 Estimate the cost of Metrics Insights queries before execution:
 
 ```typescript
-import { parse, estimateCost } from '@agentix/aws-cw-miq-parser';
+import { parse, estimateCost } from '@agentix-e/aws-cw-miq-parser';
 
 function analyzeQueryCost(query: string): void {
   const ast = parse(query);
@@ -192,7 +192,7 @@ analyzeQueryCost('SELECT AVG(CPUUtilization) FROM SCHEMA("AWS/EC2", InstanceId) 
 Collect all syntax errors for editor diagnostics:
 
 ```typescript
-import { parseWithRecovery } from '@agentix/aws-cw-miq-parser';
+import { parseWithRecovery } from '@agentix-e/aws-cw-miq-parser';
 
 function getDiagnostics(query: string) {
   const result = parseWithRecovery(query);
@@ -259,7 +259,7 @@ Configurable linter with 6 rules:
 | `max-group-by` | warn | Warn on >3 GROUP BY dimensions |
 
 ```typescript
-import { lint } from '@agentix/aws-cw-miq-parser';
+import { lint } from '@agentix-e/aws-cw-miq-parser';
 const messages = lint(ast, { rules: { 'require-schema': 'warn' } });
 ```
 
@@ -280,7 +280,7 @@ Enhanced traversal with `NodePath` context providing:
 - `path.remove()` — remove node from its parent (works on arrays and optional fields)
 
 ```typescript
-import { parse, traverseWithPath } from '@agentix/aws-cw-miq-parser';
+import { parse, traverseWithPath } from '@agentix-e/aws-cw-miq-parser';
 
 const ast = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2" WHERE a = \'1\' AND b = \'2\'');
 
@@ -308,7 +308,7 @@ Heuristic cost estimation based on dimension cardinalities and AWS pricing ($0.0
 - `caveat: string` — honest disclaimer about heuristic nature
 
 ```typescript
-import { parse, estimateCost } from '@agentix/aws-cw-miq-parser';
+import { parse, estimateCost } from '@agentix-e/aws-cw-miq-parser';
 
 const ast = parse('SELECT AVG(CPUUtilization) FROM SCHEMA("AWS/EC2", InstanceId) LIMIT 10');
 const estimate = estimateCost(ast);
@@ -326,7 +326,7 @@ Returns LSP/Monaco-compatible completion items. Context-sensitive: provides oper
 Flat arrays of all MIQ keywords and aggregation function names for syntax highlighting.
 
 ```typescript
-import { getCompletions, getAllKeywords } from '@agentix/aws-cw-miq-parser';
+import { getCompletions, getAllKeywords } from '@agentix-e/aws-cw-miq-parser';
 
 // For syntax highlighting
 const keywords = getAllKeywords(); // ['SELECT', 'FROM', 'AVG', ...]
@@ -354,15 +354,15 @@ Colorized terminal output using ANSI escape codes (requires `chalk`).
 Import only what you need:
 
 ```typescript
-import { parse } from '@agentix/aws-cw-miq-parser/parser';
-import { validate } from '@agentix/aws-cw-miq-parser/validator';
-import { serialize } from '@agentix/aws-cw-miq-parser/serializer';
-import { lint, listRules } from '@agentix/aws-cw-miq-parser/linter';
-import { traverseWithPath } from '@agentix/aws-cw-miq-parser/visitor';
-import { estimateCost } from '@agentix/aws-cw-miq-parser/cost';
-import { getCompletions } from '@agentix/aws-cw-miq-parser/autocomplete';
-import { parseWithRecovery } from '@agentix/aws-cw-miq-parser/recovery';
-import { validateAst } from '@agentix/aws-cw-miq-parser/schema';
+import { parse } from '@agentix-e/aws-cw-miq-parser/parser';
+import { validate } from '@agentix-e/aws-cw-miq-parser/validator';
+import { serialize } from '@agentix-e/aws-cw-miq-parser/serializer';
+import { lint, listRules } from '@agentix-e/aws-cw-miq-parser/linter';
+import { traverseWithPath } from '@agentix-e/aws-cw-miq-parser/visitor';
+import { estimateCost } from '@agentix-e/aws-cw-miq-parser/cost';
+import { getCompletions } from '@agentix-e/aws-cw-miq-parser/autocomplete';
+import { parseWithRecovery } from '@agentix-e/aws-cw-miq-parser/recovery';
+import { validateAst } from '@agentix-e/aws-cw-miq-parser/schema';
 ```
 
 ## Supported Query Syntax

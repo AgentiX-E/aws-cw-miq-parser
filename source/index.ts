@@ -1,4 +1,4 @@
-// Public API for @agentix/aws-cw-miq-parser
+// Public API for @agentix-e/aws-cw-miq-parser
 //
 // This module exports the core parsing functionality for CloudWatch
 // Metrics Insights query strings, including error formatting,
