@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 1 — Quality Gates
+  # ═══════════════════════════════════════════════════════════════════════════
+  quality:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:grammar
+      - run: pnpm run typecheck
+      - run: pnpm run test -- --coverage
+      - run: pnpm run test:property
+        env:
+          CI: 'true'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 2 — Benchmark
+  # ═══════════════════════════════════════════════════════════════════════════
+  benchmark:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:grammar
+      - run: pnpm run test:bench
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-report
+          path: bench/
+          retention-days: 7
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Stage 3 — Publish to npm (OIDC)
+  # ═══════════════════════════════════════════════════════════════════════════
+  publish-npm:
+    needs: [quality, benchmark]
+    if: ${{ !cancelled() && needs.quality.result == 'success' && needs.benchmark.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      # npm 11.x (Node 24) natively supports OIDC for provenance publishing.
+      # npm 10.x (Node 22) uses .npmrc authToken which causes E404 after
+      # provenance signing.  Always publish with Node 24 + npm 11.x.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:grammar
+
+      - name: Publish to npm (OIDC)
+        run: |
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VER=$(node -p "require('./package.json').version")
+          if npm view "${PKG_NAME}@${PKG_VER}" version >/dev/null 2>&1; then
+            echo "⚠ ${PKG_NAME}@${PKG_VER} already published — skipping"
+            exit 0
+          fi
+          npm publish --access public --provenance
+
+      - name: npm publish summary
+        run: |
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VER=$(node -p "require('./package.json').version")
+          echo "### 📦 npm Package Published" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Version |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| \`${PKG_NAME}\` | ${PKG_VER} |" >> $GITHUB_STEP_SUMMARY

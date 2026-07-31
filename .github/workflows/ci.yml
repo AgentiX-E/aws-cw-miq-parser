@@ -1,28 +1,34 @@
 name: CI
 
 on:
-  push:
-    branches: [master]
   pull_request:
     branches: [master]
+  push:
+    branches: [master]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # ─── Quality Gates (lint + typecheck + unit + integration + property) ───
   lint:
     name: Lint & Typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 10
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build:grammar
@@ -35,9 +41,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20, 22, 24]
+        node-version: ['18', '20', '22', '24']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -48,25 +54,26 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build:grammar
       - run: pnpm run test -- --coverage
-      - name: Upload coverage
+      - name: Upload coverage (Node 22 only)
         if: matrix.node-version == '22'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: coverage
+          name: coverage-report
           path: coverage/
+          retention-days: 7
 
   property-tests:
     name: Property Tests (Fuzz)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 10
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build:grammar
@@ -76,53 +83,129 @@ jobs:
 
   benchmark:
     name: Benchmarks
+    needs: [lint, test]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 10
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build:grammar
       - run: pnpm run test:bench
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v7
         with:
-          tool: 'vitest'
-          output-file-path: bench-output.txt
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
-          alert-threshold: '150%'
-          comment-on-alert: true
-          fail-on-alert: false
+          name: benchmark-report
+          path: bench/
+          retention-days: 7
 
   cli-smoke:
     name: CLI Smoke Test
+    needs: [lint, test]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 10
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build:grammar
       - name: Smoke test parse
-        run: echo 'SELECT AVG(CPUUtilization) FROM "AWS/EC2"' > /tmp/test.miq && node --loader tsx cli/index.ts parse /tmp/test.miq
+        run: echo 'SELECT AVG(CPUUtilization) FROM "AWS/EC2"' > /tmp/test.miq && node --import tsx cli/index.ts parse /tmp/test.miq
       - name: Smoke test validate
-        run: node --loader tsx cli/index.ts validate /tmp/test.miq
+        run: node --import tsx cli/index.ts validate /tmp/test.miq
       - name: Smoke test lint
-        run: node --loader tsx cli/index.ts lint /tmp/test.miq
+        run: node --import tsx cli/index.ts lint /tmp/test.miq
       - name: Smoke test format
-        run: node --loader tsx cli/index.ts format /tmp/test.miq
+        run: node --import tsx cli/index.ts format /tmp/test.miq
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # GitHub Pages — publish coverage + benchmarks on push to master
+  # ═══════════════════════════════════════════════════════════════════════
+  deploy-pages:
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
+    needs: [test, benchmark]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:grammar
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage-report
+          path: coverage
+        continue-on-error: true
+
+      - name: Download benchmark report
+        uses: actions/download-artifact@v8
+        with:
+          name: benchmark-report
+          path: bench
+        continue-on-error: true
+
+      - name: Prepare pages
+        run: node scripts/prepare-pages.mjs
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deploy1
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Retry deploy (transient error)
+        id: deploy2
+        if: steps.deploy1.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+
+      - name: Collect page URL
+        id: deployment
+        if: always()
+        run: |
+          if [ "${{ steps.deploy1.outcome }}" = "success" ]; then
+            echo "page_url=${{ steps.deploy1.outputs.page_url }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ steps.deploy2.outcome }}" = "success" ]; then
+            echo "page_url=${{ steps.deploy2.outputs.page_url }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "Page deployment failed after retry" >&2
+            exit 1
+          fi
