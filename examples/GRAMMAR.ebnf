@@ -1,0 +1,86 @@
+# CloudWatch Metrics Insights — Formal Grammar (EBNF)
+
+This is the formal specification of the CloudWatch Metrics Insights query language
+as implemented by `@agentix-e/aws-cw-miq-parser`. The grammar is defined in
+Extended Backus-Naur Form (EBNF) for reference and tooling compatibility.
+
+## EBNF Grammar
+
+```ebnf
+(* ── Top Level ── *)
+Query             = [ Comment ] , SelectClause , FromClause ,
+                    [ WhereClause ] , [ GroupByClause ] ,
+                    [ OrderByClause ] , [ LimitClause ] ;
+
+(* ── Comments (value-add, not documented by AWS) ── *)
+Comment           = LineComment | BlockComment ;
+LineComment       = "--" , { ? any character except newline ? } , ? newline ? ;
+BlockComment      = "/*" , { ? any character ? } , "*/" ;
+
+(* ── SELECT Clause ── *)
+SelectClause      = "SELECT" , Function , "(" , Identifier , ")" ;
+Function          = "AVG" | "COUNT" | "MAX" | "MIN" | "SUM" ;
+
+(* ── FROM Clause ── *)
+FromClause        = "FROM" , ( NamespaceFrom | SchemaFrom ) ;
+NamespaceFrom     = Identifier ;
+SchemaFrom        = "SCHEMA" , "(" , Identifier , { "," , DimensionName } , ")" ;
+DimensionName     = Identifier ;
+
+(* ── WHERE Clause ── *)
+WhereClause       = "WHERE" , Condition , { LogicalConjunction , Condition } ;
+Condition         = LabelKey , ComparisonOperator , LabelValue ;
+LabelKey          = TagIdentifier | PlainIdentifier | "AWS.AccountId" ;
+LabelValue        = StringLiteral | NumberLiteral | CurrentAccountId ;
+CurrentAccountId  = "CURRENT_ACCOUNT_ID" , "(" , ")" ;
+
+(* ── Tag Syntax ── *)
+TagIdentifier     = "tag." , Identifier ;
+
+(* ── Comparison & Logical Operators ── *)
+ComparisonOperator = "=" | "!=" ;
+LogicalConjunction = "AND" | "OR" ;   (* OR is forward-compat — AWS only documents AND *)
+
+(* ── GROUP BY Clause ── *)
+GroupByClause     = "GROUP" , "BY" , LabelKey , { "," , LabelKey } ;
+
+(* ── ORDER BY Clause ── *)
+OrderByClause     = "ORDER" , "BY" , Function , "(" , ")" , [ SortDirection ] ;
+SortDirection     = "ASC" | "DESC" ;
+
+(* ── LIMIT Clause ── *)
+LimitClause       = "LIMIT" , Digit , { Digit } ;
+
+(* ── Lexical Tokens ── *)
+Identifier        = PlainIdentifier | QuotedIdentifier ;
+PlainIdentifier   = Letter , { Letter | Digit | "_" } ;
+QuotedIdentifier  = '"' , { ? any character except '"' | '\"' ? } , '"' ;
+StringLiteral     = "'" , { ? any character except "'" | "\'" ? } , "'" ;
+NumberLiteral     = Digit , { Digit } ;
+Digit             = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+Letter            = "A" | "B" | ... | "Z" | "a" | "b" | ... | "z" ;
+
+(* ── Keywords (case-insensitive) ── *)
+(* All keywords above are case-insensitive per the AWS MIQ specification. *)
+```
+
+## Compliance Notes
+
+| Rule | Source | Notes |
+|------|--------|-------|
+| `ComparisonOperator` | `=`, `!=` only | AWS documents only these two operators |
+| `LogicalConjunction` | `AND` + `OR` | `OR` is forward-compat; AWS Docs: AND only |
+| `Function` | AVG, COUNT, MAX, MIN, SUM | 5 aggregation functions as documented |
+| `SortDirection` | ASC (default), DESC | Default inferred when absent |
+| `LimitClause` | Integer 1–500 | Validated semantically |
+| `CurrentAccountId` | `CURRENT_ACCOUNT_ID()` | Cross-account monitoring support |
+| `TagIdentifier` | `tag.` prefix | Tag key follows: `tag.key` or `tag."quoted:key"` |
+| Comments | `--`, `/* */` | Not documented by AWS; value-add feature |
+
+## Implementation Reference
+
+The executable grammar is implemented in PEG format at:
+[`source/grammar/metrics-insights.pegjs`](../source/grammar/metrics-insights.pegjs)
+
+The compliance matrix mapping every rule to implementation is at:
+[`SPEC_COMPLIANCE.md`](../SPEC_COMPLIANCE.md)
