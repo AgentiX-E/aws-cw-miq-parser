@@ -107,6 +107,23 @@ jobs:
         env:
           CI: 'true'
 
+  memory-pressure:
+    name: Memory Pressure (10K ops)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build:grammar
+      - run: pnpm run test:memory
+
   benchmark:
     name: Benchmarks
     needs: [lint, test]
@@ -126,6 +143,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build:grammar
       - run: pnpm run test:bench
+      - name: Check benchmark regression
+        run: npx tsx scripts/benchmark-regression.ts
       - name: Upload benchmark artifact
         uses: actions/upload-artifact@v7
         with:

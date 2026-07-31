@@ -1,8 +1,9 @@
 // Unit tests: parser error paths, input validation, and error enrichment.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { parse } from '../../source/parser.js';
 import { ErrorCodes } from '../../source/errors.js';
+import { setParseCacheSize, clearParseCache, getParseCacheStats } from '../../source/parser.js';
 
 describe('parse — input validation', () => {
   it('throws on non-string input (null)', () => {
@@ -209,5 +210,77 @@ describe('parse — valid query output structure', () => {
     const result = parse('SELECT AVG(MyMetric) FROM "MyNamespace"');
     expect(result.select.metricName).toBe('MyMetric');
     expect(result.from.namespace).toBe('MyNamespace');
+  });
+});
+
+describe('parse — result cache', () => {
+  beforeEach(() => {
+    clearParseCache();
+    setParseCacheSize(256);
+  });
+
+  afterEach(() => {
+    clearParseCache();
+    setParseCacheSize(256);
+  });
+
+  it('returns cached AST for identical queries', () => {
+    const first = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2"');
+    const second = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2"');
+    // Same object reference when cached
+    expect(second).toBe(first);
+  });
+
+  it('returns different AST for different queries', () => {
+    const first = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2"');
+    const second = parse('SELECT COUNT(Invocations) FROM "AWS/Lambda"');
+    expect(second).not.toBe(first);
+  });
+
+  it('cache hit preserves structural equivalence', () => {
+    const first = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2"');
+    const second = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2"');
+    expect(second.select.function).toBe(first.select.function);
+    expect(second.select.metricName).toBe(first.select.metricName);
+    expect(second.from.namespace).toBe(first.from.namespace);
+  });
+
+  it('getParseCacheStats reports cache state', () => {
+    const stats0 = getParseCacheStats();
+    expect(stats0.size).toBe(0);
+
+    parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2"');
+    const stats1 = getParseCacheStats();
+    expect(stats1.size).toBe(1);
+
+    parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2"'); // cache hit
+    const stats2 = getParseCacheStats();
+    expect(stats2.size).toBe(1); // same entry count
+  });
+
+  it('setParseCacheSize(0) disables caching', () => {
+    setParseCacheSize(0);
+    const first = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2"');
+    const second = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2"');
+    expect(second).not.toBe(first); // different objects
+  });
+
+  it('LRU eviction removes oldest entries', () => {
+    setParseCacheSize(2);
+    parse('SELECT AVG(a) FROM "ns1"');
+    parse('SELECT AVG(b) FROM "ns2"');
+    parse('SELECT AVG(c) FROM "ns3"'); // evicts first
+    expect(getParseCacheStats().size).toBe(2);
+
+    // Re-accessing "ns2" should still be cached
+    const _ = parse('SELECT AVG(b) FROM "ns2"');
+    expect(getParseCacheStats().size).toBe(2);
+  });
+
+  it('clearParseCache empties the cache', () => {
+    parse('SELECT AVG(a) FROM "ns1"');
+    parse('SELECT AVG(b) FROM "ns2"');
+    clearParseCache();
+    expect(getParseCacheStats().size).toBe(0);
   });
 });

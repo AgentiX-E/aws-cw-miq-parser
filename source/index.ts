@@ -4,7 +4,7 @@
 // Metrics Insights query strings, including error formatting,
 // serialization, semantic validation, and AST traversal utilities.
 
-export { parse, ErrorCodes } from './parser.js';
+export { parse, ErrorCodes, setParseCacheSize, clearParseCache, getParseCacheStats } from './parser.js';
 export { parseWithRecovery } from './recovery.js';
 export type { RecoveryResult } from './recovery.js';
 export { validate } from './validator.js';

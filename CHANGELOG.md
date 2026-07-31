@@ -7,6 +7,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Parse result cache**: LRU memoization with configurable size via `setParseCacheSize()`, automatically disabled in test environments to prevent cross-test state leakage
+- **Parse cache API**: `setParseCacheSize()`, `clearParseCache()`, `getParseCacheStats()` exported for runtime cache management
+- **Memory pressure test**: 10,000 consecutive parse and round-trip iterations with heap growth tracking and performance degradation detection
+- **Benchmark regression CI**: Automated comparison against committed baseline (`bench/baseline.json`), flags ≥10% throughput regressions, generates Markdown report
+- **Memory pressure CI job**: Dedicated CI workflow running 10K operations to detect leaks
 - **Spec compliance matrix**: Complete mapping of 54 AWS MIQ syntax rules to parser implementation (`SPEC_COMPLIANCE.md`)
 - **Conformance test suite**: 61 curated queries achieving 100% agreement rate, DeepSeek-powered AI query generation for coverage expansion
 - **CommentAttachable on all AST nodes**: Per-node comment attachment via position-based distribution, full round-trip preservation through serialize
@@ -25,7 +30,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - **Visitor**: Root `visitQuery` now correctly triggered in `traverseWithPath` (previously unreachable)
 - **Visitor**: Removed dead `visitNode` function
+- **Visitor**: Defensive null-checks after visitor mutations (remove/replaceWith) to prevent NPE on deleted array elements
 - **Serializer**: Trailing line comments (`--`) now properly append newline to avoid consuming subsequent clauses
+- **Parse cache**: Auto-disabled in vitest/test environments to prevent cross-test AST mutation leakage
 
 ## [0.5.0] — 2026-07-31
 

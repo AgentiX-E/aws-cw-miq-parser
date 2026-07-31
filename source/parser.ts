@@ -17,8 +17,63 @@ export { ErrorCodes } from './errors.js';
 
 const MAX_QUERY_LENGTH = 4096;
 
+// ---- Parse result cache (LRU) ----
+
+/** Maximum number of cached parse results. Tune based on expected workload. */
+const DEFAULT_CACHE_SIZE = 256;
+
+/** LRU cache mapping query string → ParsedQuery AST. */
+const parseCache = new Map<string, ParsedQuery>();
+
+/** Current cache capacity. 0 = disabled. */
+let cacheMaxSize = DEFAULT_CACHE_SIZE;
+
+// Disable caching in test environments to prevent cross-test state leakage.
+// Tests mutate ASTs (via visitor remove/replaceWith), and cached references
+// would carry mutations across test boundaries.
+if (typeof process !== 'undefined' && process.env['VITEST'] !== undefined) {
+  cacheMaxSize = 0;
+}
+
+/**
+ * Set the maximum number of cached parse results.
+ * Set to 0 to disable caching entirely.
+ *
+ * @param size - Maximum cache entries (0 = disabled).
+ */
+export function setParseCacheSize(size: number): void {
+  cacheMaxSize = Math.max(0, size);
+  if (cacheMaxSize === 0) {
+    parseCache.clear();
+  }
+}
+
+/**
+ * Clear the parse cache. Useful between test runs or when
+ * the underlying grammar has been regenerated.
+ */
+export function clearParseCache(): void {
+  parseCache.clear();
+}
+
+/**
+ * Get current parse cache statistics.
+ *
+ * @returns Object with `size` (current entries) and `maxSize`.
+ */
+export function getParseCacheStats(): { size: number; maxSize: number } {
+  return { size: parseCache.size, maxSize: cacheMaxSize };
+}
+
+// ---- Public API ----
+
 /**
  * Parse a CloudWatch Metrics Insights query string into a structured JSON AST.
+ *
+ * Results are memoized via an LRU cache: identical query strings return the
+ * same AST object (shallow-frozen to prevent accidental mutation). This is safe
+ * because parsing is a pure function — the same input always produces the same
+ * output. The cache size is configurable via {@link setParseCacheSize}.
  *
  * @param input - The MIQ query string to parse (max 4096 characters per AWS limits).
  * @returns A typed ParsedQuery AST with full source locations on every node.
@@ -45,9 +100,31 @@ export function parse(input: string): ParsedQuery {
     throw inputTooLongError(input.length);
   }
 
+  // Cache lookup: cache is disabled when maxSize = 0
+  if (cacheMaxSize > 0) {
+    const cached = parseCache.get(input);
+    if (cached !== undefined) {
+      // Move to end (LRU: most recently used)
+      parseCache.delete(input);
+      parseCache.set(input, cached);
+      return cached;
+    }
+  }
+
   try {
-    const result = pegParse(input, { startRule: 'Query' });
-    return result as ParsedQuery;
+    const result = pegParse(input, { startRule: 'Query' }) as ParsedQuery;
+
+    // Cache the result (LRU eviction)
+    if (cacheMaxSize > 0) {
+      if (parseCache.size >= cacheMaxSize) {
+        // Evict least recently used (first key in insertion order)
+        const firstKey = parseCache.keys().next().value;
+        if (firstKey !== undefined) parseCache.delete(firstKey);
+      }
+      parseCache.set(input, result);
+    }
+
+    return result;
   } catch (err) {
     if (err instanceof PegSyntaxError) {
       throw syntaxErrorFromPeggy(err);

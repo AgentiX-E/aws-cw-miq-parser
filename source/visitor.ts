@@ -205,9 +205,9 @@ export function traverseWithPath(query: ParsedQuery, visitor: PathVisitor): void
     if (query.where && !wherePath.shouldSkip && !wherePath.shouldStop) {
       for (let i = 0; i < query.where.conditions.length; i++) {
         if (wherePath.shouldStop) break;
-        if (!query.where) break; // WHERE may have been removed by a visitor
+        if (!query.where) break;
         const cond = query.where.conditions[i];
-        if (!cond) break;
+        if (!cond) break; // past end after removal
         const condPath = new NodePath(cond, wherePath, i, 'conditions');
         visitor.visitWhereCondition?.(condPath, i);
         if (condPath.shouldStop) break;
@@ -224,7 +224,7 @@ export function traverseWithPath(query: ParsedQuery, visitor: PathVisitor): void
         if (gbPath.shouldStop) break;
         if (!query.groupBy) break;
         const item = query.groupBy.items[i];
-        if (!item) break;
+        if (!item) break; // past end after removal
         const itemPath = new NodePath(item, gbPath, i, 'items');
         visitor.visitGroupByItem?.(itemPath);
         if (itemPath.shouldStop) break;

@@ -3,6 +3,7 @@ dist/
 .env
 *.tsbuildinfo
 coverage/
-bench/
+bench/*
+!bench/baseline.json
 docs/
 test/conformance/results/

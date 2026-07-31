@@ -57,6 +57,7 @@
     "test:coverage": "vitest run --coverage",
     "test:property": "vitest run test/property/",
     "test:bench": "vitest bench --run",
+    "test:memory": "vitest run test/memory.test.ts",
     "docs": "typedoc",
     "docs:open": "typedoc && open docs/api/index.html",
     "lint": "eslint source/ test/ cli/ scripts/",

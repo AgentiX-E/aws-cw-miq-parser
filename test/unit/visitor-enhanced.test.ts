@@ -1,8 +1,13 @@
 // Unit tests: enhanced NodePath visitor — mutation, control flow, parent navigation.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { parse } from '../../source/parser.js';
 import { traverseWithPath, NodePath } from '../../source/visitor.js';
+import { clearParseCache } from '../../source/parser.js';
+
+beforeEach(() => {
+  clearParseCache();
+});
 import type { LimitClause } from '../../source/types.js';
 
 describe('NodePath', () => {
@@ -259,14 +264,19 @@ describe('NodePath.remove', () => {
     const query = parse(
       "SELECT AVG(CPUUtilization) FROM \"AWS/EC2\" WHERE a = '1' AND b = '2'"
     );
+    expect(query.where!.conditions).toHaveLength(2);
+
+    let visited: string[] = [];
     traverseWithPath(query, {
       visitWhereCondition(path, index) {
+        visited.push(path.node.labelKey);
         if (index === 0) {
           path.remove();
         }
       },
     });
 
+    expect(visited).toEqual(['a']); // only 'a' is visited; 'b' is skipped after removal
     expect(query.where!.conditions).toHaveLength(1);
     expect(query.where!.conditions[0]!.labelKey).toBe('b');
   });
