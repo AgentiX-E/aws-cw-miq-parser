@@ -178,7 +178,27 @@ const RESERVED_KEYWORDS = new Set([
 
 /**
  * Run semantic validation on a parsed query AST.
- * Returns errors for invalid semantics and warnings for suspicious patterns.
+ *
+ * Performs the following checks:
+ * - SELECT/ORDER BY function consistency (warning)
+ * - LIMIT value in range 1–500 (error)
+ * - Reserved keyword detection (error)
+ * - Duplicate GROUP BY keys (warning)
+ * - WHERE key vs SCHEMA dimension consistency (warning)
+ *
+ * @param query - The parsed query AST from {@link parse}.
+ * @returns A {@link ValidationResult} with `valid` flag, `errors`, and `warnings`.
+ *
+ * @example
+ * ```ts
+ * import { parse, validate } from '@agentix-e/aws-cw-miq-parser';
+ *
+ * const ast = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2" LIMIT 0');
+ * const result = validate(ast);
+ * if (!result.valid) {
+ *   console.error(result.errors[0]!.message); // 'LIMIT value 0 is out of range...'
+ * }
+ * ```
  */
 export function validate(query: ParsedQuery): ValidationResult {
   const errors: ValidationMessage[] = [];

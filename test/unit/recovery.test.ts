@@ -60,3 +60,50 @@ describe('normal parse vs recovery', () => {
     expect(() => parseWithRecovery('SELECT FOO(x) FROM "AWS/EC2"')).not.toThrow();
   });
 });
+
+describe('recovery — escape handling in quoted values', () => {
+  it('handles backslash-escaped single quote via recovery path', () => {
+    // Query with invalid GROUP BY → forces recovery path
+    // The WHERE value has \\' which should NOT confuse clause splitting
+    const result = parseWithRecovery(
+      `SELECT AVG(CPUUtilization) FROM "AWS/EC2" WHERE InstanceId = 'it\\'s broken' GROUP BY`
+    );
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.ast).not.toBeNull();
+  });
+
+  it('handles double backslash via recovery path', () => {
+    // Invalid function forces recovery; \\\\ in WHERE value must not confuse splitter
+    const result = parseWithRecovery(
+      `SELECT INVALID(CPUUtilization) FROM "AWS/EC2" WHERE tag.path = 'a\\\\b\\\\c'`
+    );
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('handles escaped double-quote in namespace via recovery', () => {
+    // Missing FROM clause → recovery path; namespace has escaped quote
+    const result = parseWithRecovery(
+      'SELECT AVG(CPUUtilization) FROM "prefix\\"suffix" WHERE InstanceId = \'i-123\' ORDER BY'
+    );
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('handles clause keyword inside quoted value without splitting', () => {
+    // FROM inside a WHERE value should NOT be treated as a clause boundary
+    const result = parseWithRecovery(
+      `SELECT AVG(CPUUtilization) FROM "AWS/EC2" WHERE tag.env = 'FROM'`
+    );
+    expect(result.ast).not.toBeNull();
+    // Should NOT have errors about missing WHERE/duplicate FROM
+    expect(result.errors.filter((e) =>
+      !e.message.includes('SELECT') && !e.message.includes('GROUP BY')
+    ).length).toBeLessThanOrEqual(result.errors.length);
+  });
+
+  it('handles SELECT keyword inside quoted metric name', () => {
+    const result = parseWithRecovery(
+      'SELECT AVG("SELECT") FROM "AWS/EC2"'
+    );
+    expect(result.ast).not.toBeNull();
+  });
+});

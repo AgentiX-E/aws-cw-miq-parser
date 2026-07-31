@@ -5,6 +5,7 @@
 [![CI](https://github.com/AgentiX-E/aws-cw-miq-parser/actions/workflows/ci.yml/badge.svg)](https://github.com/AgentiX-E/aws-cw-miq-parser/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@agentix-e/aws-cw-miq-parser?color=blue)](https://www.npmjs.com/package/@agentix-e/aws-cw-miq-parser)
 [![Coverage](https://img.shields.io/badge/coverage-report-blue)](https://agentix-e.github.io/aws-cw-miq-parser/coverage/)
+[![API Docs](https://img.shields.io/badge/docs-API-blue)](https://agentix-e.github.io/aws-cw-miq-parser/api/)
 [![Benchmark Report](https://img.shields.io/badge/benchmark-latest-blue)](https://agentix-e.github.io/aws-cw-miq-parser/benchmark/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
@@ -42,6 +43,7 @@ Input String → [Lexer] → [Parser] → [Transformer] → ParsedQuery AST
 - **Property-tested** with fast-check (1M+ random iterations)
 - **Zero runtime parser dependencies** — Peggy is build-time only
 - **632 tests**, 99%+ line coverage, 95%+ branch coverage
+- **[Full AWS spec compliance matrix →](SPEC_COMPLIANCE.md)**
 
 ## Installation
 

@@ -161,20 +161,19 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build:grammar
+      - run: pnpm run docs
 
       - name: Download coverage report
         uses: actions/download-artifact@v8
         with:
           name: coverage-report
           path: coverage
-        continue-on-error: true
 
       - name: Download benchmark report
         uses: actions/download-artifact@v8
         with:
           name: benchmark-report
           path: bench
-        continue-on-error: true
 
       - name: Prepare pages
         run: node scripts/prepare-pages.mjs
@@ -188,24 +187,5 @@ jobs:
           path: docs
 
       - name: Deploy to GitHub Pages
-        id: deploy1
-        uses: actions/deploy-pages@v4
-        continue-on-error: true
-
-      - name: Retry deploy (transient error)
-        id: deploy2
-        if: steps.deploy1.outcome == 'failure'
-        uses: actions/deploy-pages@v4
-
-      - name: Collect page URL
         id: deployment
-        if: always()
-        run: |
-          if [ "${{ steps.deploy1.outcome }}" = "success" ]; then
-            echo "page_url=${{ steps.deploy1.outputs.page_url }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ steps.deploy2.outcome }}" = "success" ]; then
-            echo "page_url=${{ steps.deploy2.outputs.page_url }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "Page deployment failed after retry" >&2
-            exit 1
-          fi
+        uses: actions/deploy-pages@v4

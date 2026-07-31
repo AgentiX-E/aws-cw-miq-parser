@@ -30,6 +30,10 @@ const landingHtml = `<!DOCTYPE html>
 </head>
 <body>
   <h1>@agentix-e/aws-cw-miq-parser — Reports</h1>
+  <a href="./api/">
+    📖 API Documentation
+    <div class="desc">Complete TypeDoc API reference — all public types, functions, and interfaces</div>
+  </a>
   <a href="./coverage/">
     📊 Coverage Report
     <div class="desc">Code coverage report (lines, branches, functions, statements)</div>
@@ -43,6 +47,27 @@ const landingHtml = `<!DOCTYPE html>
 
 writeFileSync(join(docsDir, 'index.html'), landingHtml, 'utf-8');
 console.log('[prepare-pages] Root landing page written to docs/index.html');
+
+// ---- TypeDoc API documentation ----
+const apiSrc = join(rootDir, 'docs', 'api');
+const apiDest = join(docsDir, 'api');
+if (existsSync(apiSrc)) {
+  cpSync(apiSrc, apiDest, { recursive: true });
+  console.log('[prepare-pages] API docs copied to docs/api/');
+} else {
+  console.log('[prepare-pages] No API docs found — building...');
+  // Build TypeDoc inline if not already built
+  try {
+    const { execSync } = await import('node:child_process');
+    execSync('npx typedoc', { cwd: rootDir, stdio: 'inherit' });
+    if (existsSync(apiSrc)) {
+      cpSync(apiSrc, apiDest, { recursive: true });
+      console.log('[prepare-pages] API docs built and copied to docs/api/');
+    }
+  } catch {
+    console.log('[prepare-pages] Failed to build API docs — skipping');
+  }
+}
 
 // ---- Coverage report ----
 const coverageSrc = join(rootDir, 'coverage');

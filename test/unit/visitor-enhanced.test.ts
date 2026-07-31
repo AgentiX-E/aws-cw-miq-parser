@@ -222,3 +222,52 @@ describe('NodePath — mutation', () => {
     expect(visited).toEqual(['a']);
   });
 });
+
+describe('NodePath.remove', () => {
+  it('removes optional clause from parent', () => {
+    const query = parse(
+      'SELECT AVG(CPUUtilization) FROM "AWS/EC2" WHERE InstanceId = \'i-123\' ORDER BY AVG() DESC'
+    );
+    traverseWithPath(query, {
+      visitWhereClause(path) {
+        path.remove();
+      },
+    });
+
+    expect(query.where).toBeUndefined();
+    expect(query.orderBy).toBeDefined(); // other clauses unaffected
+  });
+
+  it('removes WHERE condition from array', () => {
+    const query = parse(
+      "SELECT AVG(CPUUtilization) FROM \"AWS/EC2\" WHERE a = '1' AND b = '2' AND c = '3'"
+    );
+    traverseWithPath(query, {
+      visitWhereCondition(path, index) {
+        if (path.node.labelKey === 'b') {
+          path.remove();
+        }
+      },
+    });
+
+    expect(query.where!.conditions).toHaveLength(2);
+    expect(query.where!.conditions[0]!.labelKey).toBe('a');
+    expect(query.where!.conditions[1]!.labelKey).toBe('c');
+  });
+
+  it('removes first WHERE condition from array', () => {
+    const query = parse(
+      "SELECT AVG(CPUUtilization) FROM \"AWS/EC2\" WHERE a = '1' AND b = '2'"
+    );
+    traverseWithPath(query, {
+      visitWhereCondition(path, index) {
+        if (index === 0) {
+          path.remove();
+        }
+      },
+    });
+
+    expect(query.where!.conditions).toHaveLength(1);
+    expect(query.where!.conditions[0]!.labelKey).toBe('b');
+  });
+});

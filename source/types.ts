@@ -48,7 +48,7 @@ export interface CommentAttachable {
 // --- Clause Types ---
 
 /** SELECT clause: specifies the aggregation function and target metric. */
-export interface SelectClause {
+export interface SelectClause extends CommentAttachable {
   type: 'SelectClause';
   function: AggregationFunction;
   metricName: string;
@@ -56,14 +56,14 @@ export interface SelectClause {
 }
 
 /** FROM clause using a bare namespace without SCHEMA. */
-export interface NamespaceFrom {
+export interface NamespaceFrom extends CommentAttachable {
   type: 'NamespaceFrom';
   namespace: string;
   location: SourceLocation;
 }
 
 /** FROM clause using SCHEMA table function with namespace and optional dimension keys. */
-export interface SchemaFrom {
+export interface SchemaFrom extends CommentAttachable {
   type: 'SchemaFrom';
   namespace: string;
   dimensions: string[];
@@ -74,7 +74,7 @@ export interface SchemaFrom {
 export type FromClause = NamespaceFrom | SchemaFrom;
 
 /** A single condition within a WHERE clause. */
-export interface WhereCondition {
+export interface WhereCondition extends CommentAttachable {
   type: 'WhereCondition';
   labelKey: string;
   operator: ComparisonOperator;
@@ -87,14 +87,14 @@ export interface WhereCondition {
 }
 
 /** WHERE clause: a chain of AND-connected conditions. */
-export interface WhereClause {
+export interface WhereClause extends CommentAttachable {
   type: 'WhereClause';
   conditions: WhereCondition[];
   location: SourceLocation;
 }
 
 /** A single item in the GROUP BY clause. */
-export interface GroupByItem {
+export interface GroupByItem extends CommentAttachable {
   type: 'GroupByItem';
   labelKey: string;
   /** Derived from `tag.` prefix on labelKey. */
@@ -103,14 +103,14 @@ export interface GroupByItem {
 }
 
 /** GROUP BY clause. */
-export interface GroupByClause {
+export interface GroupByClause extends CommentAttachable {
   type: 'GroupByClause';
   items: GroupByItem[];
   location: SourceLocation;
 }
 
 /** ORDER BY clause. */
-export interface OrderByClause {
+export interface OrderByClause extends CommentAttachable {
   type: 'OrderByClause';
   function: AggregationFunction;
   direction: SortDirection;
@@ -118,7 +118,7 @@ export interface OrderByClause {
 }
 
 /** LIMIT clause. */
-export interface LimitClause {
+export interface LimitClause extends CommentAttachable {
   type: 'LimitClause';
   value: number;
   location: SourceLocation;
@@ -134,7 +134,7 @@ export type QueryType = 'MetricsInsightsQuery';
  * Every node carries its source location for error reporting and tooling.
  * Comments are attached to the nearest AST node for formatter preservation.
  */
-export interface ParsedQuery {
+export interface ParsedQuery extends CommentAttachable {
   type: QueryType;
   select: SelectClause;
   from: FromClause;
@@ -144,9 +144,6 @@ export interface ParsedQuery {
   limit?: LimitClause;
   /** Source location spanning the entire query string. */
   location: SourceLocation;
-  /** Comments appearing before the SELECT keyword or after the last clause. */
-  leadingComments?: Comment[];
-  trailingComments?: Comment[];
 }
 
 // --- Error Types ---

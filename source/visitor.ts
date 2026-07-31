@@ -174,7 +174,8 @@ export interface PathVisitor {
 export function traverseWithPath(query: ParsedQuery, visitor: PathVisitor): void {
   const rootPath = new NodePath(query);
 
-  visitNode(rootPath, visitor);
+  // Visit the root query node first
+  visitor.visitQuery?.(rootPath as NodePath<ParsedQuery>);
 
   if (rootPath.shouldStop) return;
 
@@ -201,10 +202,13 @@ export function traverseWithPath(query: ParsedQuery, visitor: PathVisitor): void
   if (query.where && !rootPath.shouldSkip && !rootPath.shouldStop) {
     const wherePath = new NodePath(query.where, rootPath, 'where', null);
     visitor.visitWhereClause?.(wherePath);
-    if (!wherePath.shouldSkip && !wherePath.shouldStop) {
+    if (query.where && !wherePath.shouldSkip && !wherePath.shouldStop) {
       for (let i = 0; i < query.where.conditions.length; i++) {
         if (wherePath.shouldStop) break;
-        const condPath = new NodePath(query.where.conditions[i]!, wherePath, i, 'conditions');
+        if (!query.where) break; // WHERE may have been removed by a visitor
+        const cond = query.where.conditions[i];
+        if (!cond) break;
+        const condPath = new NodePath(cond, wherePath, i, 'conditions');
         visitor.visitWhereCondition?.(condPath, i);
         if (condPath.shouldStop) break;
       }
@@ -215,10 +219,13 @@ export function traverseWithPath(query: ParsedQuery, visitor: PathVisitor): void
   if (query.groupBy && !rootPath.shouldSkip && !rootPath.shouldStop) {
     const gbPath = new NodePath(query.groupBy, rootPath, 'groupBy', null);
     visitor.visitGroupByClause?.(gbPath);
-    if (!gbPath.shouldSkip && !gbPath.shouldStop) {
+    if (query.groupBy && !gbPath.shouldSkip && !gbPath.shouldStop) {
       for (let i = 0; i < query.groupBy.items.length; i++) {
         if (gbPath.shouldStop) break;
-        const itemPath = new NodePath(query.groupBy.items[i]!, gbPath, i, 'items');
+        if (!query.groupBy) break;
+        const item = query.groupBy.items[i];
+        if (!item) break;
+        const itemPath = new NodePath(item, gbPath, i, 'items');
         visitor.visitGroupByItem?.(itemPath);
         if (itemPath.shouldStop) break;
       }
@@ -235,12 +242,6 @@ export function traverseWithPath(query: ParsedQuery, visitor: PathVisitor): void
   if (query.limit && !rootPath.shouldSkip && !rootPath.shouldStop) {
     const limPath = new NodePath(query.limit, rootPath, 'limit');
     visitor.visitLimitClause?.(limPath);
-  }
-}
-
-function visitNode(path: NodePath, visitor: PathVisitor): void {
-  if (path.node.type === 'MetricsInsightsQuery') {
-    visitor.visitQuery?.(path as NodePath<ParsedQuery>);
   }
 }
 

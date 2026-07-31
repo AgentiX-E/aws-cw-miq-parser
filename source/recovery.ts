@@ -32,8 +32,22 @@ export interface RecoveryResult {
  * Parse a query in error recovery mode: collect ALL syntax errors,
  * return a best-effort partial AST.
  *
+ * Unlike {@link parse} which throws on the first error, this function
+ * attempts to extract each clause independently and reports all errors
+ * found across the entire query. Useful for IDE diagnostics and linters
+ * that need to show multiple errors at once (Babel-compatible pattern).
+ *
  * @param input - The MIQ query string.
- * @returns Partial parse result with all errors collected.
+ * @returns A {@link RecoveryResult} with `ast` (possibly null), `errors`, and `comments`.
+ *
+ * @example
+ * ```ts
+ * import { parseWithRecovery } from '@agentix-e/aws-cw-miq-parser';
+ *
+ * const result = parseWithRecovery('SELECT FOO(x) FROM "AWS/EC2" WHERE');
+ * console.log(result.errors.length); // ≥1
+ * console.log(result.ast?.select);    // may still have partial SELECT data
+ * ```
  */
 export function parseWithRecovery(input: string): RecoveryResult {
   if (typeof input !== 'string' || input.trim().length === 0) {
@@ -193,25 +207,42 @@ function splitIntoClauses(input: string): ClauseFragment[] {
  * Replace content inside single- and double-quoted strings with spaces
  * so that clause keywords within quotes are not matched as boundaries.
  * Preserves string length to maintain original offset positions.
+ *
+ * Correctly handles escape sequences: `\\` is a literal backslash (does NOT
+ * escape the next character), while `\'` or `\"` within a string are escaped
+ * quotes that do NOT toggle quote state.
  */
 function maskQuotedContent(input: string): string {
   const chars = input.split('');
   let inDouble = false;
   let inSingle = false;
-  let prev = '';
+  let escaped = false;
 
   for (let i = 0; i < chars.length; i++) {
     const ch = chars[i]!;
 
-    if (ch === '"' && !inSingle && prev !== '\\') {
+    // An escape toggle: \ starts an escape, \\ cancels the escape
+    if (!escaped && ch === '\\') {
+      escaped = true;
+      continue;
+    }
+
+    if (escaped) {
+      // This character is escaped (e.g. \' or \" or \\)
+      // For \\, the \ was the escape-initiator; the second \ is the literal char
+      // In both cases, the escaped char stays inside the string
+      escaped = false;
+      continue;
+    }
+
+    // Quote toggling (only outside escape sequences)
+    if (ch === '"' && !inSingle) {
       inDouble = !inDouble;
-    } else if (ch === "'" && !inDouble && prev !== '\\') {
+    } else if (ch === "'" && !inDouble) {
       inSingle = !inSingle;
     } else if (inDouble || inSingle) {
       chars[i] = ' ';
     }
-
-    prev = ch;
   }
 
   return chars.join('');

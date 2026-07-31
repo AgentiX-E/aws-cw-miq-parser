@@ -146,7 +146,27 @@ const BUILT_IN_RULES: LintRule[] = [
 
 /**
  * Run all enabled linter rules against a parsed query.
- * Returns validation messages for issues found.
+ *
+ * Built-in rules (configurable via {@link LinterOptions.rules}):
+ * - `require-schema` — Prefer SCHEMA() over bare namespace (default: off)
+ * - `enforce-limit` — Require LIMIT on GROUP BY queries (default: warn)
+ * - `max-limit` — Warn on LIMIT > 100 (default: off)
+ * - `count-without-order` — Suggest ORDER BY with COUNT() (default: off)
+ * - `where-without-schema` — Warn on WHERE with bare namespace (default: warn)
+ * - `max-group-by` — Warn on >3 GROUP BY dimensions (default: warn)
+ *
+ * @param query - The parsed query AST.
+ * @param options - Optional rule configuration overriding default severities.
+ * @returns Array of {@link ValidationMessage} objects for issues found.
+ *
+ * @example
+ * ```ts
+ * import { parse, lint } from '@agentix-e/aws-cw-miq-parser';
+ *
+ * const ast = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2" GROUP BY InstanceId');
+ * const issues = lint(ast);
+ * // [{ severity: 'warning', code: 'LINT_ENFORCE_LIMIT', message: '...' }]
+ * ```
  */
 export function lint(query: ParsedQuery, options?: LinterOptions): ValidationMessage[] {
   const severities = options?.rules ?? {};
@@ -169,7 +189,20 @@ export function lint(query: ParsedQuery, options?: LinterOptions): ValidationMes
   return messages;
 }
 
-/** Get the list of available linter rules. */
+/**
+ * Get the list of available linter rules with their default severities.
+ *
+ * @returns Array of rule descriptors with id, description, and defaultSeverity.
+ *
+ * @example
+ * ```ts
+ * import { listRules } from '@agentix-e/aws-cw-miq-parser';
+ *
+ * for (const rule of listRules()) {
+ *   console.log(`${rule.id}: ${rule.description} [${rule.defaultSeverity}]`);
+ * }
+ * ```
+ */
 export function listRules(): { id: string; description: string; defaultSeverity: LintSeverity }[] {
   return BUILT_IN_RULES.map((r) => ({
     id: r.id,

@@ -65,3 +65,55 @@ describe('comment preservation', () => {
     expect(comment.location.start.column).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe('mid-query comment attachment', () => {
+  it('attaches comment after SELECT to select node trailingComments', () => {
+    const result = parse('SELECT AVG(CPUUtilization) -- metric\nFROM "AWS/EC2"');
+    // Comment appears after SELECT but before FROM → should be on select or from
+    // distributeComments puts it on select.trailingComments (last clause before comment)
+    expect(result.select.trailingComments).toBeDefined();
+    expect(result.select.trailingComments!.length).toBeGreaterThanOrEqual(1);
+    expect(result.select.trailingComments![0]!.text).toContain('metric');
+  });
+
+  it('attaches comment after FROM to from node trailingComments', () => {
+    const result = parse(
+      'SELECT AVG(CPUUtilization) FROM "AWS/EC2" /* ns comment */\n'
+      + "WHERE InstanceId = 'i-123'"
+    );
+    expect(result.from.trailingComments).toBeDefined();
+    expect(result.from.trailingComments!.length).toBeGreaterThanOrEqual(1);
+    expect(result.from.trailingComments![0]!.text).toContain('ns comment');
+  });
+
+  it('attaches comment after LIMIT to limit node trailingComments', () => {
+    const result = parse(
+      'SELECT AVG(CPUUtilization) FROM "AWS/EC2" LIMIT 10 -- top 10'
+    );
+    expect(result.limit).toBeDefined();
+    expect(result.limit!.trailingComments).toBeDefined();
+    expect(result.limit!.trailingComments![0]!.text).toContain('top 10');
+  });
+
+  it('serializer preserves per-node trailing comments through round-trip', () => {
+    const input = 'SELECT AVG(CPUUtilization) -- inline\nFROM "AWS/EC2"';
+    const serialized = serialize(parse(input));
+
+    // The comment should appear in the output
+    expect(serialized).toContain('-- inline');
+
+    // Re-parse should also capture the comment
+    const reparse = parse(serialized);
+    expect(reparse.select.trailingComments).toBeDefined();
+  });
+
+  it('handles comments between WHERE and GROUP BY', () => {
+    const result = parse(
+      "SELECT AVG(CPUUtilization) FROM SCHEMA(\"AWS/EC2\", InstanceId) "
+      + "WHERE InstanceId = 'i-123' /* filter */\n"
+      + "GROUP BY InstanceId"
+    );
+    expect(result.where!.trailingComments).toBeDefined();
+    expect(result.where!.trailingComments![0]!.text).toContain('filter');
+  });
+});

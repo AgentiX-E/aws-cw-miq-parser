@@ -325,3 +325,101 @@ describe('formatTerminalError', () => {
     expect(output).toContain('SELECT');
   });
 });
+
+describe('formatTerminalError — error types', () => {
+  it('formats semantic errors with correct label', async () => {
+    const semanticErr: ParseError = {
+      message: 'LIMIT out of range',
+      location: {
+        start: { offset: 0, line: 1, column: 1 },
+        end: { offset: 10, line: 1, column: 11 },
+      },
+      code: 'SEM_LIMIT_OUT_OF_RANGE',
+      type: 'semantic',
+    };
+    const source = 'SELECT AVG(CPUUtilization) FROM "AWS/EC2"';
+    const output = await formatTerminalError(source, semanticErr);
+    expect(output).toContain('Semantic error');
+    expect(output).toContain('LIMIT out of range');
+  });
+
+  it('formats internal errors with correct label', async () => {
+    const internalErr: ParseError = {
+      message: 'Unexpected parsing failure',
+      location: {
+        start: { offset: 0, line: 1, column: 1 },
+        end: { offset: 10, line: 1, column: 11 },
+      },
+      code: 'INT_UNEXPECTED',
+      type: 'internal',
+    };
+    const source = 'SELECT AVG(CPUUtilization) FROM "AWS/EC2"';
+    const output = await formatTerminalError(source, internalErr);
+    expect(output).toContain('Internal error');
+  });
+
+  it('formatTerminalError includes expected tokens when available', async () => {
+    const errWithExpected: ParseError = {
+      message: 'Unexpected token',
+      location: {
+        start: { offset: 0, line: 1, column: 1 },
+        end: { offset: 5, line: 1, column: 6 },
+      },
+      code: 'SYN_UNEXPECTED_TOKEN',
+      type: 'syntax',
+      expected: ['FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'LIMIT'],
+    };
+    const source = 'SELECT AVG(CPUUtilization) FROM "AWS/EC2"';
+    const output = await formatTerminalError(source, errWithExpected);
+    expect(output).toContain('expected');
+    expect(output).toContain('FROM');
+    expect(output).not.toContain('and 0 more');
+  });
+
+  it('formatTerminalError truncates long expected token lists', async () => {
+    const errWithMany: ParseError = {
+      message: 'Unexpected token',
+      location: {
+        start: { offset: 0, line: 1, column: 1 },
+        end: { offset: 5, line: 1, column: 6 },
+      },
+      code: 'SYN_UNEXPECTED_TOKEN',
+      type: 'syntax',
+      expected: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'], // 8 items
+    };
+    const source = 'SELECT AVG(CPUUtilization) FROM "AWS/EC2"';
+    const output = await formatTerminalError(source, errWithMany);
+    expect(output).toContain('and 3 more');
+  });
+
+  it('formatSourceSnippet shows previous line context for line > 1', () => {
+    const err: ParseError = {
+      message: 'Error on line 2',
+      location: {
+        start: { offset: 28, line: 2, column: 1 },
+        end: { offset: 32, line: 2, column: 5 },
+      },
+      code: 'SYN_UNEXPECTED_TOKEN',
+      type: 'syntax',
+    };
+    const source = 'SELECT AVG(CPUUtilization)\nFROM "AWS/EC2"';
+    const output = formatSourceSnippet(source, err.location, err.message);
+    expect(output).toContain('SELECT'); // previous line shown
+    expect(output).toContain('FROM');    // error line shown
+  });
+
+  it('formatTerminalError handles error on second line', async () => {
+    const err: ParseError = {
+      message: 'Invalid FROM',
+      location: {
+        start: { offset: 28, line: 2, column: 1 },
+        end: { offset: 32, line: 2, column: 5 },
+      },
+      code: 'SYN_UNEXPECTED_TOKEN',
+      type: 'syntax',
+    };
+    const source = 'SELECT AVG(CPUUtilization)\nFROM "AWS/EC2"';
+    const output = await formatTerminalError(source, err);
+    expect(output).toContain('Syntax error');
+  });
+});

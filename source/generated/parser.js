@@ -412,11 +412,10 @@ function peg$parse(input, options) {
       if (orderBy) result.orderBy = orderBy;
       if (limit) result.limit = limit;
 
-      // Attach any comments collected during lexing
-      if (collectedComments.length > 0) {
-        result.leadingComments = collectedComments;
-        collectedComments = [];
-      }
+      // Distribute collected comments to nearest AST nodes based on position
+      distributeComments(result, {
+        select, from, where, groupBy, orderBy, limit
+      });
 
       return result;
     };
@@ -2079,8 +2078,59 @@ function peg$parse(input, options) {
   }
 
 
-  // Comment tracking — collected during lexing, attached to root AST node
+  // Comment tracking — collected during lexing, attached to nearest AST node
+  // based on source position (offset-based sorting).
   let collectedComments = [];
+
+  /**
+   * Distribute collected comments to their nearest AST clause node.
+   * Comments before the first clause → root.leadingComments.
+   * Comments between clauses → leadingComments of the later clause.
+   * Comments after the last clause → root.trailingComments.
+   */
+  function distributeComments(rootNode, clauses) {
+    if (collectedComments.length === 0) return;
+
+    const sorted = collectedComments.slice().sort(
+      (a, b) => a.location.start.offset - b.location.start.offset
+    );
+
+    // Build an ordered list of clause positions for comment attribution
+    const clauseOrder = [];
+    for (const [key, node] of Object.entries(clauses)) {
+      if (node && node.location) {
+        clauseOrder.push({ key, node, offset: node.location.start.offset });
+      }
+    }
+    clauseOrder.sort((a, b) => a.offset - b.offset);
+
+    for (const comment of sorted) {
+      const commentOffset = comment.location.start.offset;
+
+      // Find the latest clause that starts before this comment
+      let targetKey = null;
+      for (const clause of clauseOrder) {
+        if (clause.offset < commentOffset) {
+          targetKey = clause.key;
+        } else {
+          break;
+        }
+      }
+
+      if (targetKey === null) {
+        // Comment before all clauses → root leadingComments
+        if (!rootNode.leadingComments) rootNode.leadingComments = [];
+        rootNode.leadingComments.push(comment);
+      } else {
+        // Comment after a clause → that clause's trailingComments
+        const targetNode = clauses[targetKey];
+        if (!targetNode.trailingComments) targetNode.trailingComments = [];
+        targetNode.trailingComments.push(comment);
+      }
+    }
+
+    collectedComments = [];
+  }
 
   peg$result = peg$startRuleFunction();
 

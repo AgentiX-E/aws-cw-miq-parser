@@ -76,24 +76,30 @@ function syntaxErrorFromPeggy(
     },
   };
 
-  // Classify the error for better diagnostics
-  let code = ErrorCodes.SYN_UNEXPECTED_TOKEN as string;
-  const msg = peggyErr.message.toLowerCase();
+  const expectedDescs = peggyErr.expected?.map((e) => e.description) ?? [];
+  let code: string = ErrorCodes.SYN_UNEXPECTED_TOKEN;
 
-  if (msg.includes('select')) {
-    code = ErrorCodes.SYN_MISSING_CLAUSE;
-  } else if (
-    msg.includes('avg') || msg.includes('count') || msg.includes('max') ||
-    msg.includes('min') || msg.includes('sum')
+  // Classify by expected token descriptions (structured, not substring matching).
+  // Peggy uses "one of AVG, COUNT, ..." for function alternatives via our grammar.
+  if (expectedDescs.some((d) =>
+    typeof d === 'string' && /^one of AVG, COUNT, MAX, MIN, SUM/i.test(d))
   ) {
     code = ErrorCodes.SYN_INVALID_FUNCTION;
+  } else {
+    // Detect missing clause keywords from Peggy's structured message:
+    // "Expected \"SELECT\" or ..." or "Expected \"FROM\" ..."
+    // The clause keywords appear quoted in the message.
+    const clauseKwRe = /"(SELECT|FROM|WHERE|GROUP BY|ORDER BY|LIMIT)"/i;
+    if (clauseKwRe.test(peggyErr.message)) {
+      code = ErrorCodes.SYN_MISSING_CLAUSE;
+    }
   }
 
   return createSyntaxError(
     peggyErr.message,
     location,
     code,
-    peggyErr.expected?.map((e) => e.description),
+    expectedDescs,
     peggyErr.found ?? undefined,
   );
 }

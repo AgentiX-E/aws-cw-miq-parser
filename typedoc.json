@@ -1,0 +1,49 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["source/index.ts"],
+  "entryPointStrategy": "expand",
+  "out": "docs/api",
+  "name": "@agentix-e/aws-cw-miq-parser",
+  "includeVersion": true,
+  "readme": "none",
+  "tsconfig": "tsconfig.build.json",
+  "skipErrorChecking": true,
+  "exclude": [
+    "source/generated/**",
+    "test/**",
+    "cli/**",
+    "scripts/**"
+  ],
+  "excludeExternals": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "plugin": [],
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Core Parsing",
+    "Validation",
+    "Serialization",
+    "Linting",
+    "AST Traversal",
+    "Cost Estimation",
+    "IDE Integration",
+    "Error Handling",
+    "Types",
+    "*"
+  ],
+  "sort": [
+    "source-order"
+  ],
+  "kindSortOrder": [
+    "Function",
+    "TypeAlias",
+    "Interface",
+    "Class",
+    "Variable",
+    "Enum"
+  ]
+}

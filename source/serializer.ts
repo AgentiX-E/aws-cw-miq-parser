@@ -3,7 +3,7 @@
 // Guarantees round-trip property: parse(serialize(parse(q))) ≡ parse(q)
 // Note: output may differ in whitespace/quoting style but preserves all semantics.
 
-import type { ParsedQuery, FromClause, WhereClause, GroupByClause, OrderByClause } from './types.js';
+import type { ParsedQuery, FromClause, WhereClause, GroupByClause, OrderByClause, CommentAttachable } from './types.js';
 
 /** Options controlling serialization output style. */
 export interface SerializeOptions {
@@ -24,15 +24,30 @@ const DEFAULT_OPTIONS: Required<SerializeOptions> = {
 /**
  * Serialize a ParsedQuery AST back to a Metrics Insights SQL query string.
  *
+ * Guarantees the round-trip property: `parse(serialize(parse(q))) ≡ parse(q)`.
+ * Output may differ in whitespace/quoting style but preserves all semantics.
+ * Comments attached to AST nodes are preserved in the output.
+ *
  * @param query - The parsed query AST to serialize.
  * @param options - Formatting options.
  * @returns A valid Metrics Insights query string.
+ *
+ * @example
+ * ```ts
+ * import { parse, serialize } from '@agentix-e/aws-cw-miq-parser';
+ *
+ * const ast = parse('SELECT AVG(CPUUtilization) FROM "AWS/EC2"');
+ * const sql = serialize(ast); // 'SELECT AVG(CPUUtilization) FROM "AWS/EC2"'
+ *
+ * // Pretty-print with lowercase keywords
+ * const pretty = serialize(ast, { pretty: true, uppercase: false });
+ * ```
  */
 export function serialize(query: ParsedQuery, options?: SerializeOptions): string {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const parts: string[] = [];
 
-  // Preserve leading comments
+  // Output root-level leading comments (comments before SELECT)
   if (query.leadingComments && query.leadingComments.length > 0) {
     for (const c of query.leadingComments) {
       parts.push(c.text);
@@ -44,28 +59,49 @@ export function serialize(query: ParsedQuery, options?: SerializeOptions): strin
   }
 
   parts.push(serializeSelect(query, opts));
+  appendComments(query.select, parts, opts);
+
   parts.push(serializeFrom(query, opts));
+  appendComments(query.from, parts, opts);
 
   if (query.where) {
     parts.push(serializeWhere(query.where, opts));
+    appendComments(query.where, parts, opts);
   }
   if (query.groupBy) {
     parts.push(serializeGroupBy(query.groupBy, opts));
+    appendComments(query.groupBy, parts, opts);
   }
   if (query.orderBy) {
     parts.push(serializeOrderBy(query.orderBy, opts));
+    appendComments(query.orderBy, parts, opts);
   }
   if (query.limit) {
     parts.push(serializeLimit(query, opts));
-  }
-
-  // Preserve trailing comments
-  if (query.trailingComments && query.trailingComments.length > 0) {
-    parts.push(query.trailingComments.map((c) => c.text).join(' '));
+    appendComments(query.limit, parts, opts);
   }
 
   const separator = opts.pretty ? '\n' : ' ';
   return parts.join(separator);
+}
+
+/** Append trailing comments of a node to the output parts array. */
+function appendComments(node: CommentAttachable | undefined, parts: string[], opts: Required<SerializeOptions>): void {
+  if (!node) return;
+  // Output trailing comments (comments that appear after this node in the source)
+  if (node.trailingComments && node.trailingComments.length > 0) {
+    for (const c of node.trailingComments) {
+      parts.push(c.text);
+    }
+    // In single-line mode, ensure a line comment doesn't consume the next clause.
+    // Line comments (--) consume the rest of the line, so we must add a newline.
+    if (!opts.pretty) {
+      const last = node.trailingComments[node.trailingComments.length - 1]!;
+      if (last.type === 'LineComment') {
+        parts[parts.length - 1] += '\n';
+      }
+    }
+  }
 }
 
 // ---- Clause serializers ----

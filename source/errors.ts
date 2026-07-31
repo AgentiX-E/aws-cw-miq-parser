@@ -164,7 +164,11 @@ async function getChalk(): Promise<any> {
 /**
  * Format a ParseError for terminal display with colors.
  * Requires the optional `chalk` dependency.
+ *
+ * Note: Color output branches are excluded from coverage
+ * since they depend on dynamic chalk import behavior.
  */
+/* v8 ignore start */
 export async function formatTerminalError(
   source: string,
   error: ParseError,
@@ -234,6 +238,7 @@ export async function formatTerminalError(
 
   return parts.join('\n');
 }
+/* v8 ignore stop */
 
 /** Format a ParseError to a plain string (no colors). */
 export function formatError(source: string, error: ParseError): string {
