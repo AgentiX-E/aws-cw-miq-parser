@@ -42,8 +42,9 @@ Input String → [Lexer] → [Parser] → [Transformer] → ParsedQuery AST
 - **CLI** — 5 subcommands for parse/validate/lint/serialize/format
 - **Property-tested** with fast-check (1M+ random iterations)
 - **Zero runtime parser dependencies** — Peggy is build-time only
-- **632 tests**, 99%+ line coverage, 95%+ branch coverage
+- **724 tests**, 99%+ line coverage, 95%+ branch coverage
 - **[Full AWS spec compliance matrix →](SPEC_COMPLIANCE.md)**
+- **[Architecture Decision Records →](adr/)**
 
 ## Installation
 
@@ -87,6 +88,8 @@ npx cw-miq serialize query.miq  # Serialize AST back to SQL
 ```
 
 ## Scenario Guides
+
+> See the [Migration Guide →](MIGRATION.md) for detailed instructions on migrating from raw MIQ queries in Terraform, CloudFormation, AWS SDK, and Grafana.
 
 ### CI/CD Pre-Deployment Validation
 

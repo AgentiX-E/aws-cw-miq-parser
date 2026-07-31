@@ -4,6 +4,29 @@ All notable changes to `@agentix-e/aws-cw-miq-parser` are documented in this fil
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- **Spec compliance matrix**: Complete mapping of 54 AWS MIQ syntax rules to parser implementation (`SPEC_COMPLIANCE.md`)
+- **Conformance test suite**: 61 curated queries achieving 100% agreement rate, DeepSeek-powered AI query generation for coverage expansion
+- **CommentAttachable on all AST nodes**: Per-node comment attachment via position-based distribution, full round-trip preservation through serialize
+- **TypeDoc API documentation**: Automated API reference with CI deployment to GitHub Pages
+- **Architecture Decision Records**: 3 ADRs documenting PEG grammar choice, comment distribution strategy, and conformance testing approach (`adr/`)
+- **Migration guide**: Detailed instructions for migrating from Terraform, CloudFormation, AWS SDK, and Grafana (`MIGRATION.md`)
+- **Codecov integration**: Coverage uploads with PR delta reporting
+- **Changelog CI check**: PR validation ensuring CHANGELOG.md is updated
+
+### Changed
+- **Error classification**: Replaced fragile `includes()` substring matching with structured expected-token description matching and quoted-keyword message extraction
+- **Recovery escape handling**: Fixed `maskQuotedContent` to correctly handle `\\'` (escaped-backslash) sequences via proper `\` toggle state tracking
+- **Visitor safety**: Added defensive null-checks after visitor mutations (remove/replaceWith) to prevent NPE on deleted nodes
+- **CI hardening**: Removed all `continue-on-error: true` from workflows
+
+### Fixed
+- **Visitor**: Root `visitQuery` now correctly triggered in `traverseWithPath` (previously unreachable)
+- **Visitor**: Removed dead `visitNode` function
+- **Serializer**: Trailing line comments (`--`) now properly append newline to avoid consuming subsequent clauses
+
 ## [0.5.0] — 2026-07-31
 
 ### Added
