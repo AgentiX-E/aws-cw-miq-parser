@@ -13,24 +13,12 @@
 // Design principles:
 //   - Keywords are case-insensitive ("SELECT"i)
 //   - Identifiers (namespaces, metric names, dimensions) are case-sensitive
-//   - Comments (-- line, /* block */) are treated as whitespace
-//   - Error annotations use expected() for precise diagnostics
+//   - Comments (-- line, /* block */) are captured during lexing and attached
+//     as leadingComments on the root AST node
 
 {
-  // ---- Helper Functions ----
-
-  const AGGREGATION_FUNCTIONS = new Set(['AVG', 'COUNT', 'MAX', 'MIN', 'SUM']);
-
   // Comment tracking — collected during lexing, attached to root AST node
   let collectedComments = [];
-
-  function normalizeFunction(name) {
-    const upper = name.toUpperCase();
-    if (!AGGREGATION_FUNCTIONS.has(upper)) {
-      error(`Unknown aggregation function: ${name}`);
-    }
-    return upper;
-  }
 }
 
 // ============================================================
@@ -66,6 +54,7 @@ Function
   = name:("AVG"i / "COUNT"i / "MAX"i / "MIN"i / "SUM"i) {
       return text().toUpperCase();
     }
+  / &{ return expected('one of AVG, COUNT, MAX, MIN, SUM (aggregation function)'); }
 
 // Quoted identifier: "anything with special chars"
 QuotedIdentifier

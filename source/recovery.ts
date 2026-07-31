@@ -147,16 +147,25 @@ interface ClauseFragment {
   startOffset: number;
 }
 
-/** Split a broken query string into clause-level fragments. */
+/** Split a broken query string into clause-level fragments.
+ *
+ *  Uses regex clause-boundary matching with quote-aware preprocessing
+ *  to avoid misidentifying clause keywords within single- or double-quoted
+ *  strings as clause boundaries.
+ */
 function splitIntoClauses(input: string): ClauseFragment[] {
   const fragments: ClauseFragment[] = [];
+
+  // Mask content inside quotes to prevent clause keywords from matching
+  // inside string literals or quoted identifiers
+  const masked = maskQuotedContent(input);
 
   // Match clause boundaries: SELECT, FROM, WHERE, GROUP BY, ORDER BY, LIMIT
   const clauseRegex = /\b(SELECT|FROM|WHERE|GROUP\s+BY|ORDER\s+BY|LIMIT)\b/gi;
   const matches: { keyword: string; index: number }[] = [];
 
   let match: RegExpExecArray | null;
-  while ((match = clauseRegex.exec(input)) !== null) {
+  while ((match = clauseRegex.exec(masked)) !== null) {
     const raw = match[0].toUpperCase().replace(/\s+/g, ' ');
     let name: string;
     if (raw === 'GROUP BY') name = 'groupBy';
@@ -178,6 +187,34 @@ function splitIntoClauses(input: string): ClauseFragment[] {
   }
 
   return fragments;
+}
+
+/**
+ * Replace content inside single- and double-quoted strings with spaces
+ * so that clause keywords within quotes are not matched as boundaries.
+ * Preserves string length to maintain original offset positions.
+ */
+function maskQuotedContent(input: string): string {
+  const chars = input.split('');
+  let inDouble = false;
+  let inSingle = false;
+  let prev = '';
+
+  for (let i = 0; i < chars.length; i++) {
+    const ch = chars[i]!;
+
+    if (ch === '"' && !inSingle && prev !== '\\') {
+      inDouble = !inDouble;
+    } else if (ch === "'" && !inDouble && prev !== '\\') {
+      inSingle = !inSingle;
+    } else if (inDouble || inSingle) {
+      chars[i] = ' ';
+    }
+
+    prev = ch;
+  }
+
+  return chars.join('');
 }
 
 // ---- Helpers ----
